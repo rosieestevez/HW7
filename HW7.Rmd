@@ -1,0 +1,218 @@
+---
+title: "Lab 6/HW 7 "
+output: html_document
+date: "2024-03-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Rosairi Estevez
+### HW 7 
+
+
+**My study group**: Chris and Isamari
+
+Research Articles: 
+1. Prevalence of Adverse Childhood Experiences in Low-Income Latino Immigrant and Nonimmigrant Children (Loria & Caughy, 2018)
+
+This study focuses on estimating the prevalence of adverse childhood experiences among low-income Latino children, examining the differences of ACE by immigrant generational status. The data used is from the *2011 - 2012 National Survey of Children's Health * Of the sample size of 22,297 children, 6483 of them were Latino, 9% being first-gen, 57% were second-gen, and 30% were third-gen and up. 25% of Latino children had already been exposed to ACE, and Latino non-immigrant children had a higher prevalence of ACE regarding financial hardship and parent divorce or separation. Mean numbers differed amongst generational status and ACE, but ACE were highest amongst third or higher-generation non-immigrant children and lowest in second-gen immigrant children. In conclusion, prevalence of ACE in low-income Latino children is the same in prevalence to all US children, yet prevalence is sig. higher in non-immigrant Latino children. 
+
+
+2. Adverse Childhood Experiences, Ethnicity, and Substance Use among College Students: Findings from a Two-State Sample (Forster et al., 2019)
+
+This study focuses upon ACE-relaed substance use patterns amongst diverse college student samples. The research used college students from two different states, the data used are responses from the *National College Health Assessent (In California)* and the *College Student Health Survey (in Minnesota)*. The regression models searched for correlations with ACE experiences and alcohol, tobacco, marijuana, illicit substance use, and binge drinking, amongst White, Black, Hispanic, Asian, multiraciol, and other students. The results were that students used marijuana (22%), tobacco (75%), alcohol (6%), or illicit drinking, as well as past 2-week binge drinking (30%). ACE were associated with these behaviors, but there was sig. ethnic variation in ACE exposure (40 - 52%), especially the relationship between ACE and marijuana/tobacco use. 
+
+
+Regression Models to explain cannabis use
+
+```{r}
+model_2 <- lm(MARIJAN1 ~ Age_midpt + X_PRACE2 + X_HISPANC + EDUCA, data = brfss_marijan)
+summary(model_2)
+
+```
+
+
+```{r}
+model_3 <- lm(MARIJAN1 ~ Age_midpt + I(Age_midpt^2) + X_PRACE2 + X_HISPANC + EDUCA, data = brfss_marijan)
+
+```
+
+```{r}
+to_be_predicted_2 <- data.frame(Age_midpt = 25:55, X_PRACE2 = "Black or African American",
+                          X_HISPANC = "no", EDUCA = "Grade 12 or GED (High school graduate)")
+
+
+```
+
+```{r}
+to_be_predicted_2$yhat <- predict(model_2, newdata = to_be_predicted_2)
+```
+
+
+```{r}
+summary(model_3)
+```
+
+```{r}
+model_4 <- lm(MARIJAN1 ~ Age_midpt*(X_PRACE2 + X_HISPANC) + I(Age_midpt^2)*(X_PRACE2 + X_HISPANC) + X_PRACE2 + X_HISPANC + EDUCA, data = brfss_marijan)
+summary(model_4)
+
+anova(model_2,model_3,model_4)
+```
+
+```{r}
+to_be_predicted_2$yhat3 <- predict(model_3, newdata = to_be_predicted_2)
+to_be_predicted_2$yhat4 <- predict(model_4, newdata = to_be_predicted_2)
+
+
+d_for_graphing <- data.frame(Age_midpt = 25:55, 
+                             to_be_predicted_2$yhat,
+                             to_be_predicted_2$yhat3,
+                             to_be_predicted_2$yhat4)
+
+
+```
+
+```{r}
+p_predvals <- ggplot(d_for_graphing, aes(Age_midpt))
+
+
+```
+
+```{r}
+p_predvals + geom_line(aes(y = to_be_predicted_2.yhat)) + 
+  geom_line(aes(y = to_be_predicted_2.yhat3), color = 'blue') +
+  geom_line(aes(y = to_be_predicted_2.yhat4), color = 'red')
+```
+
+
+```{r}
+quantile(brfss_marijan$MARIJAN1, probs = c(0.99,0.95,0.94,0.93,0.92,0.91,0.9))
+
+
+brfss_marijan$MARIJAN_factor <- as.factor(brfss_marijan$MARIJAN1)
+summary(brfss_marijan$MARIJAN_factor)
+```
+```{r}
+brfss_marijan$Marijan_01 <- as.numeric(brfss_marijan$MARIJAN1 > 0)
+```
+
+```{r}
+model_5 <- lm(Marijan_01 ~ Age_midpt*(X_PRACE2 + X_HISPANC) + I(Age_midpt^2)*(X_PRACE2 + X_HISPANC) + X_PRACE2 + X_HISPANC + EDUCA, data = brfss_marijan)
+summary(model_5)
+```
+
+DIY 
+
+Add variables of Hispanic, Sex, and General Health
+
+```{r}
+model_6 <- lm(Marijan_01 ~ SEXVAR*(X_PRACE2 + X_HISPANC + GENHLTH) + I(Age_midpt^2)*(X_PRACE2 + X_HISPANC + SEXVAR) + X_PRACE2 + X_HISPANC + EDUCA + GENHLTH, data = brfss_marijan)
+```
+
+```{r}
+summary(model_6)
+```
+
+```{r}
+to_be_predicted_3 <- data.frame(Age_midpt = 25:55, SEXVAR = "Female", X_PRACE2 = "Black or African American", X_HISPANC = "yes Hispanic", EDUCA = "College 1 year to 3 years (Some college or technical school)", GENHLTH = "Fair")
+```
+
+```{r}
+to_be_predicted_3$yhat <- predict(model_6, newdata = to_be_predicted_3)
+
+```
+
+```{r}
+anova(model_4, model_5, model_6)
+```
+
+
+
+```{r}
+to_be_predicted_3$yhat3 <- predict(model_5, newdata = to_be_predicted_3)
+to_be_predicted_3$yhat4 <- predict(model_6, newdata = to_be_predicted_3)
+
+
+
+```
+
+```{r}
+d_for_graphing <- data.frame(Age_midpt = 25:55, 
+                             to_be_predicted_3$yhat,
+                             to_be_predicted_3$yhat3,
+                             to_be_predicted_3$yhat4)
+
+
+```
+
+```{r}
+p_predvals <- ggplot(d_for_graphing, aes(Age_midpt))
+p_predvals + geom_line(aes(y = to_be_predicted_3.yhat)) + 
+  geom_line(aes(y = to_be_predicted_3.yhat3), color = 'purple') +
+  geom_line(aes(y = to_be_predicted_3.yhat4), color = 'green')
+```
+
+```{r}
+model_7 <- lm(Marijan_01 ~ Age_midpt*(X_PRACE2 + X_HISPANC) + I(Age_midpt^2)*(X_PRACE2 + X_HISPANC) + ACEPUNCH + EDUCA, data = brfss_marijan)
+
+```
+
+```{r}
+summary(model_7)
+```
+
+```{r}
+model_8 <- lm(Marijan_01 ~ Age_midpt*(X_PRACE2 + X_HISPANC) + I(Age_midpt^2)*(X_PRACE2 + X_HISPANC) + ACEDRINK + EDUCA, data = brfss_marijan)
+```
+
+```{r}
+summary(model_8)
+```
+
+```{r}
+anova(model_7, model_8)
+```
+
+```{r}
+levels(brfss22$EDUCA)
+```
+```{r}
+levels(brfss22$EDUCA)
+```
+
+
+```{r}
+to_be_predicted_4 <- data.frame(Age_midpt = 25:55, X_PRACE2 = "Black or African American",
+                          X_HISPANC = "yes Hispanic", EDUCA = "Grades 9 through 11 (Some high school)", 
+                          ACEDRINK = "Yes, Adverse Childhood Exper, lived with someone who was a problem drinker or alcoholic", 
+                          ACEPUNCH = "more than once")
+
+
+```
+
+```{r}
+to_be_predicted_4$yhat7 <- predict(model_7, newdata = to_be_predicted_4)
+
+```
+
+```{r}
+to_be_predicted_4$yhat8 <- predict(model_8, newdata = to_be_predicted_4)
+```
+
+```{r}
+d3_for_graphing <- data.frame(Age_midpt = 25:55, 
+                             to_be_predicted_4$yhat,
+                             to_be_predicted_4$yhat7,
+                             to_be_predicted_4$yhat8)
+```
+
+```{r}
+p_predvals <- ggplot(d3_for_graphing, aes(Age_midpt))
+p_predvals + geom_line(aes(y = to_be_predicted_4.yhat)) + 
+  geom_line(aes(y = to_be_predicted_4.yhat7), color = 'orange') +
+  geom_line(aes(y = to_be_predicted_4.yhat8), color = 'blue')
+```
+
